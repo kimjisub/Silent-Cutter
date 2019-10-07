@@ -14,7 +14,7 @@ fs.ensureDirSync('workspace/videos')
 const chunk_size = 0.03333333
 const sounded_speed = 1
 const silent_speed = Infinity
-const standard_db = -34 // if null, set to avg
+const standard_db = -60 // if null, set to avg
 const round_1 = 2
 const round_2 = 0
 
@@ -43,6 +43,12 @@ async function start() {
 
     console.log('2. Extract Sound by Chunk')
     let pb2 = makeProgressBar(1)
+    await ffmpeg(['-i', 'workspace/1_input.mp4',
+        '-ab', '160k',
+        '-ac', '2',
+        '-ar', '44100',
+        '-vn', 'workspace/sound.wav'
+    ])
     await ffmpeg(['-i', 'workspace/1_input.mp4',
         '-f', 'segment',
         '-segment_time', `${chunk_size}`,
@@ -93,7 +99,7 @@ async function start() {
         let sounded = soundedList[i]
         let sec = i * chunk_size
 
-        if (sounded != prevSounded || soundedList.length-1 == i) {
+        if (sounded != prevSounded || soundedList.length - 1 == i) {
             editWorkList.push({
                 start: prevSec,
                 end: sec,
@@ -125,25 +131,21 @@ async function start() {
         let soundSpeed = editWork.sounded ? sounded_speed : silent_speed
         let videoSpeed = 1 / soundSpeed
         let t = (editWork.end - editWork.start) * videoSpeed
-        if(soundSpeed != Infinity)
-        await ffmpeg([
-            '-ss', `${editWork.start}`,
-            '-i', 'workspace/2_keyframed.mp4',
-            '-t', `${t}`,
-            '-filter_complex', `[0:v]setpts=${videoSpeed}*PTS[v];[0:a]atempo=${soundSpeed}[a]`,
-            '-map', '[v]',
-            '-map', '[a]',
-            '-y', `workspace/videos/${sf('{0:000000}', Number(i))}.mp4`
-        ])
+        if (soundSpeed != Infinity)
+            await ffmpeg([
+                '-ss', `${editWork.start}`,
+                '-i', 'workspace/2_keyframed.mp4',
+                '-t', `${t}`,
+                '-filter_complex', `[0:v]setpts=${videoSpeed}*PTS[v];[0:a]atempo=${soundSpeed}[a]`,
+                '-map', '[v]',
+                '-map', '[a]',
+                '-y', `workspace/videos/${sf('{0:000000}', Number(i))}.mp4`
+            ])
         pb5.tick()
     }
 
-    console.log('6. Change Speed of Each Part')
-    let pb6 = makeProgressBar(1)
-    pb6.tick()
 
-
-    console.log('7. Merge All Part to One Video')
+    console.log('6. Merge All Part to One Video')
     let pb7 = makeProgressBar(1)
     let videoFileList = fs.readdirSync('workspace/videos')
     let videoList = videoFileList.map((data) => {
@@ -230,16 +232,15 @@ function roundList(input, size) {
         let end = Math.min(i + size, input.length - 1)
         let length = end - start + 1
 
-
         let maxTotal = 0
-        for (let j = start; j <= end; j++){
+        for (let j = start; j <= end; j++) {
             let weight = (j - i) / size || 0
             maxTotal += weightValue(1, weight)
         }
         let maxAvg = maxTotal / length
 
         let total = 0
-        for (let j = start; j <= end; j++){
+        for (let j = start; j <= end; j++) {
             let weight = (j - i) / size || 0
             total += weightValue(input[j], weight)
         }
