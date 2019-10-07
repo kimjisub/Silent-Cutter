@@ -10,7 +10,9 @@ fs.ensureDirSync('workspace')
 fs.ensureDirSync('workspace/sounds')
 fs.ensureDirSync('workspace/videos')
 
-const chunkSizeSec = 0.1
+const chunk_size = 0.1
+const sounded_speed = 1
+const silent_speed = 4
 
 start()
 
@@ -27,7 +29,7 @@ async function start() {
     let pb2 = makeProgressBar(1)
     await ffmpeg(['-i', 'workspace/1_input.mp4', 
         '-f', 'segment', 
-        '-segment_time', `${chunkSizeSec}`,
+        '-segment_time', `${chunk_size}`,
         'workspace/sounds/%06d.wav'])
     pb2.tick()
 
@@ -60,10 +62,10 @@ async function start() {
     let prevSec = 0
     for(i in soundedList){
         let sounded = soundedList[i]
-        let sec = i * chunkSizeSec
+        let sec = i * chunk_size
 
         if(sounded != prevSounded){
-            editWorkList.push({start: prevSec, end: sec, sounded})
+            editWorkList.push({start: prevSec, end: sec, sounded: prevSounded})
             
             prevSounded = sounded
             prevSec = sec
@@ -86,10 +88,11 @@ async function start() {
     let pb5 = makeProgressBar(editWorkList.length)
     for (i in editWorkList){
         let editWork = editWorkList[i]
-        await ffmpeg(['-i', 'workspace/2_keyframed.mp4',
+        await ffmpeg([
             '-ss', `${editWork.start}`,
-            '-t', `${editWork.end}`, 
-            '-c', 'copy',
+            '-i', 'workspace/2_keyframed.mp4',
+            '-t', `${editWork.end - editWork.start}`, 
+            '-filter:v', `setpts=${editWork.sounded?sounded_speed:silent_speed}*PTS`,
             '-y', `workspace/videos/${sf('{0:000000}', Number(i))}.mp4`])
         pb5.tick()
     }
