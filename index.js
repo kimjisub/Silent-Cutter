@@ -1,4 +1,3 @@
-
 const fs = require('fs-extra')
 const sf = require('sf')
 const ProgressBar = require('progress')
@@ -7,13 +6,17 @@ const {
     spawn
 } = require('child_process')
 
+fs.removeSync('workspace')
 fs.ensureDirSync('workspace')
 fs.ensureDirSync('workspace/sounds')
 fs.ensureDirSync('workspace/videos')
 
-const chunk_size = 0.1
+const chunk_size = 0.03333333
 const sounded_speed = 1
-const silent_speed = 4
+const silent_speed = Infinity
+const standard_db = -34 // if null, set to avg
+const round_1 = 2
+const round_2 = 0
 
 start()
 
@@ -21,25 +24,30 @@ async function start() {
 
     const workbook = new Excel.Workbook()
     const worksheet = workbook.addWorksheet('log')
-   
-    for(let i = 1;i<=6;i++){
+
+    for (let i = 1; i <= 6; i++) {
         worksheet.getColumn(i).width = 15
-        worksheet.getColumn(i).alignment = { vertical: 'top', horizontal: 'left' }
+        worksheet.getColumn(i).alignment = {
+            vertical: 'top',
+            horizontal: 'left'
+        }
     }
 
     console.log('1. Convert video to mp4')
     let pb1 = makeProgressBar(1)
-    await ffmpeg(['-i', 'input.mov', 
-       '-y', 'workspace/1_input.mp4'])
+    await ffmpeg(['-i', 'input.mov',
+        '-y', 'workspace/1_input.mp4'
+    ])
     pb1.tick()
 
 
     console.log('2. Extract Sound by Chunk')
     let pb2 = makeProgressBar(1)
-    await ffmpeg(['-i', 'workspace/1_input.mp4', 
-        '-f', 'segment', 
+    await ffmpeg(['-i', 'workspace/1_input.mp4',
+        '-f', 'segment',
         '-segment_time', `${chunk_size}`,
-        'workspace/sounds/%06d.wav'])
+        'workspace/sounds/%06d.wav'
+    ])
     pb2.tick()
 
 
@@ -47,7 +55,7 @@ async function start() {
     let volumeList = []
     let soundFileList = fs.readdirSync('workspace/sounds')
     let pb3 = makeProgressBar(soundFileList.length)
-    for(i in soundFileList){
+    for (i in soundFileList) {
         let file = soundFileList[i]
         volumeList[i] = await meanVolume('workspace/sounds/' + file)
         pb3.tick()
@@ -57,37 +65,41 @@ async function start() {
 
     let avg = average(volumeList)
 
-    let roundedVolumeList = roundList(volumeList, 0)
+    volumeList = roundList(volumeList, round_1)
 
-    worksheet.getColumn(2).values = ['Rounded Volume'].concat(roundedVolumeList)
+    worksheet.getColumn(2).values = ['Rounded Volume'].concat(volumeList)
 
     let soundedList = []
-    for(i in volumeList)
-        soundedList[i] = volumeList[i] > avg
+    for (i in volumeList)
+        soundedList[i] = volumeList[i] > (standard_db || avg)
 
 
     worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
 
-    soundedList = roundList(soundedList, 4)
+    soundedList = roundList(soundedList, round_2)
     worksheet.getColumn(4).values = ['Rounding Sounded'].concat(soundedList)
 
     soundedList = soundedList.map(data => data > 0.5)
 
     worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
-    
+
 
 
     let editWorkList = []
     //{start: 0, end: 1.4, sounded: true}
     let prevSounded = !soundedList[0]
     let prevSec = 0
-    for(i in soundedList){
+    for (i in soundedList) {
         let sounded = soundedList[i]
         let sec = i * chunk_size
 
-        if(sounded != prevSounded){
-            editWorkList.push({start: prevSec, end: sec, sounded: prevSounded})
-            
+        if (sounded != prevSounded || soundedList.length-1 == i) {
+            editWorkList.push({
+                start: prevSec,
+                end: sec,
+                sounded: prevSounded
+            })
+
             prevSounded = sounded
             prevSec = sec
         }
@@ -99,27 +111,30 @@ async function start() {
 
     console.log('4. Set Keyframe')
     let pb4 = makeProgressBar(1)
-    await ffmpeg(['-i', 'workspace/1_input.mp4', 
-        '-x264opts', 'keyint=1', 
-        '-y', 'workspace/2_keyframed.mp4'])
+    await ffmpeg(['-i', 'workspace/1_input.mp4',
+        '-x264opts', 'keyint=1',
+        '-y', 'workspace/2_keyframed.mp4'
+    ])
     pb4.tick()
 
 
     console.log('5. Split and Speeding Videos')
     let pb5 = makeProgressBar(editWorkList.length)
-    for (i in editWorkList){
+    for (i in editWorkList) {
         let editWork = editWorkList[i]
-        let soundSpeed = editWork.sounded?sounded_speed:silent_speed
-        let videoSpeed = 1/soundSpeed
+        let soundSpeed = editWork.sounded ? sounded_speed : silent_speed
+        let videoSpeed = 1 / soundSpeed
         let t = (editWork.end - editWork.start) * videoSpeed
+        if(soundSpeed != Infinity)
         await ffmpeg([
             '-ss', `${editWork.start}`,
             '-i', 'workspace/2_keyframed.mp4',
-            '-t', `${t}`, 
+            '-t', `${t}`,
             '-filter_complex', `[0:v]setpts=${videoSpeed}*PTS[v];[0:a]atempo=${soundSpeed}[a]`,
             '-map', '[v]',
             '-map', '[a]',
-            '-y', `workspace/videos/${sf('{0:000000}', Number(i))}.mp4`])
+            '-y', `workspace/videos/${sf('{0:000000}', Number(i))}.mp4`
+        ])
         pb5.tick()
     }
 
@@ -131,15 +146,16 @@ async function start() {
     console.log('7. Merge All Part to One Video')
     let pb7 = makeProgressBar(1)
     let videoFileList = fs.readdirSync('workspace/videos')
-    let videoList = videoFileList.map((data)=>{
+    let videoList = videoFileList.map((data) => {
         return `file ${data}`
     })
     fs.writeFileSync('workspace/videos/list.txt', videoList.join('\n'))
 
     await ffmpeg(['-f', 'concat',
-            '-i', 'workspace/videos/list.txt',
-            '-c', 'copy', 
-            '-y', `workspace/3_result.mp4`])
+        '-i', 'workspace/videos/list.txt',
+        '-c', 'copy',
+        '-y', `workspace/3_result.mp4`
+    ])
     pb7.tick()
 
     await workbook.xlsx.writeFile('workspace/report.xlsx')
@@ -163,7 +179,7 @@ function ffmpeg(params) {
 
         process.on('close', (code) => {
             //console.log(`child process exited with code ${code}`);
-            if(code == 0)
+            if (code == 0)
                 resolve(log)
             else
                 reject(log)
@@ -181,21 +197,21 @@ function meanVolume(path) {
         ]).then(data => {
             let meanVolumeLog = data.match(/mean_volume:\s[-\d.\sdB]*/g);
 
-                if (meanVolumeLog) {
-                    let meanVolumeString = meanVolumeLog[0].match(/[-\d.]{1,}/g)
-                    let meanVolume = parseFloat(meanVolumeString)
-                    resolve(meanVolume)
-                } else
-                    reject('fail')
+            if (meanVolumeLog) {
+                let meanVolumeString = meanVolumeLog[0].match(/[-\d.]{1,}/g)
+                let meanVolume = parseFloat(meanVolumeString)
+                resolve(meanVolume)
+            } else
+                reject('fail')
         }).catch(data => {
             reject('fail')
         })
     })
 }
 
-const average = arr => arr.reduce( ( p, c ) => p + c, 0 ) / arr.length
+const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length
 
-function makeProgressBar(length){
+function makeProgressBar(length) {
     const progressBar = new ProgressBar(`[:bar] :percent :current/:total :elapseds`, {
         complete: '=',
         incomplete: ' ',
@@ -207,20 +223,29 @@ function makeProgressBar(length){
 }
 
 function roundList(input, size) {
-	let maxTotal = 0
-	for(let i = -size;i<=size;i++)
-        maxTotal += weightValue(1, i/size)
-	let maxAvg = maxTotal/(size*2+1)
 
     let output = []
     for (let i = 0; i < input.length; i++) {
         let start = Math.max(i - size, 0)
         let end = Math.min(i + size, input.length - 1)
         let length = end - start + 1
+
+
+        let maxTotal = 0
+        for (let j = start; j <= end; j++){
+            let weight = (j - i) / size || 0
+            maxTotal += weightValue(1, weight)
+        }
+        let maxAvg = maxTotal / length
+
         let total = 0
-        for (let j = start; j <= end; j++)
-            total += weightValue(input[j], (j - i) / size)
-        output[i] = total / length * (1/maxAvg)
+        for (let j = start; j <= end; j++){
+            let weight = (j - i) / size || 0
+            total += weightValue(input[j], weight)
+        }
+        let avg = total / length * (1 / maxAvg)
+
+        output[i] = avg
     }
     return output
 }
