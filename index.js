@@ -2,6 +2,7 @@
 const fs = require('fs-extra')
 const sf = require('sf')
 const ProgressBar = require('progress')
+const Excel = require('exceljs')
 const {
     spawn
 } = require('child_process')
@@ -17,6 +18,14 @@ const silent_speed = 4
 start()
 
 async function start() {
+
+    const workbook = new Excel.Workbook()
+    const worksheet = workbook.addWorksheet('log')
+   
+    for(let i = 1;i<=6;i++){
+        worksheet.getColumn(i).width = 15
+        worksheet.getColumn(i).alignment = { vertical: 'top', horizontal: 'left' }
+    }
 
     console.log('1. Convert video to mp4')
     let pb1 = makeProgressBar(1)
@@ -43,17 +52,29 @@ async function start() {
         volumeList[i] = await meanVolume('workspace/sounds/' + file)
         pb3.tick()
     }
-    console.log(volumeList.join(','))
+    worksheet.getColumn(1).values = ['Volume'].concat(volumeList)
 
 
     let avg = average(volumeList)
-    console.log(`\Volume Avg: ${avg}`)
 
+    let roundedVolumeList = roundList(volumeList, 0)
+
+    worksheet.getColumn(2).values = ['Rounded Volume'].concat(roundedVolumeList)
 
     let soundedList = []
     for(i in volumeList)
         soundedList[i] = volumeList[i] > avg
-    console.log(soundedList.join(','))
+
+
+    worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
+
+    soundedList = roundList(soundedList, 4)
+    worksheet.getColumn(4).values = ['Rounding Sounded'].concat(soundedList)
+
+    soundedList = soundedList.map(data => data > 0.5)
+
+    worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
+    
 
 
     let editWorkList = []
@@ -84,15 +105,20 @@ async function start() {
     pb4.tick()
 
 
-    console.log('5. Split Videos')
+    console.log('5. Split and Speeding Videos')
     let pb5 = makeProgressBar(editWorkList.length)
     for (i in editWorkList){
         let editWork = editWorkList[i]
+        let soundSpeed = editWork.sounded?sounded_speed:silent_speed
+        let videoSpeed = 1/soundSpeed
+        let t = (editWork.end - editWork.start) * videoSpeed
         await ffmpeg([
             '-ss', `${editWork.start}`,
             '-i', 'workspace/2_keyframed.mp4',
-            '-t', `${editWork.end - editWork.start}`, 
-            '-filter:v', `setpts=${editWork.sounded?sounded_speed:silent_speed}*PTS`,
+            '-t', `${t}`, 
+            '-filter_complex', `[0:v]setpts=${videoSpeed}*PTS[v];[0:a]atempo=${soundSpeed}[a]`,
+            '-map', '[v]',
+            '-map', '[a]',
             '-y', `workspace/videos/${sf('{0:000000}', Number(i))}.mp4`])
         pb5.tick()
     }
@@ -115,10 +141,12 @@ async function start() {
             '-c', 'copy', 
             '-y', `workspace/3_result.mp4`])
     pb7.tick()
+
+    await workbook.xlsx.writeFile('workspace/report.xlsx')
 }
 
 function ffmpeg(params) {
-    console.log('ffmpeg: '+ params.join(' '))
+    //console.log('\nffmpeg '+ params.join(' '))
     return new Promise((resolve, reject) => {
         const process = spawn('ffmpeg', params);
         let log = ''
@@ -176,4 +204,27 @@ function makeProgressBar(length){
     })
     progressBar.tick(0)
     return progressBar
+}
+
+function roundList(input, size) {
+	let maxTotal = 0
+	for(let i = -size;i<=size;i++)
+        maxTotal += weightValue(1, i/size)
+	let maxAvg = maxTotal/(size*2+1)
+
+    let output = []
+    for (let i = 0; i < input.length; i++) {
+        let start = Math.max(i - size, 0)
+        let end = Math.min(i + size, input.length - 1)
+        let length = end - start + 1
+        let total = 0
+        for (let j = start; j <= end; j++)
+            total += weightValue(input[j], (j - i) / size)
+        output[i] = total / length * (1/maxAvg)
+    }
+    return output
+}
+
+function weightValue(value, weight) {
+    return value * (1 - Math.pow(weight, 2))
 }
