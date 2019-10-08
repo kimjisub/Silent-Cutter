@@ -14,13 +14,14 @@ fs.ensureDirSync('workspace')
 fs.ensureDirSync('workspace/sounds')
 fs.ensureDirSync('workspace/videos')
 
+const input = 'cut.mp4'
 const chunk_size = 0.03333333 // if null sec of 1 frame
 const sounded_speed = 1
 const silent_speed = Infinity // if Infinity, skip
-let standard_db = -47 // if null, set to avg
+let standard_db = -50 // if null, set to avg
 const volume_round_range = 10
 const sounded_round_range = 4
-const round_method = 2
+const round_method = 1
 const debug = true
 
 start()
@@ -37,26 +38,18 @@ async function start() {
         }
     }
 
-    console.log('1. Convert video to mp4')
-    let pb1 = makeProgressBar(2)
-    pb1.tick()
-    await ffmpeg(['-i', 'input.mov',
-        '-preset', 'ultrafast',
-        '-y', 'workspace/1_input.mp4'
-    ])
-    pb1.tick()
 
 
-    console.log('2. Extract Sound by Chunk')
+    console.log('1. Extract Sound by Chunk')
     let pb2 = makeProgressBar(2)
     pb2.tick()
-    await ffmpeg(['-i', 'workspace/1_input.mp4',
+    await ffmpeg(['-i', input,
         '-ab', '160k',
         '-ac', '2',
         '-ar', '44100',
         '-vn', 'workspace/sound.wav'
     ])
-    await ffmpeg(['-i', 'workspace/1_input.mp4',
+    await ffmpeg(['-i', input,
         '-f', 'segment',
         '-segment_time', `${chunk_size}`,
         'workspace/sounds/%06d.wav'
@@ -64,7 +57,7 @@ async function start() {
     pb2.tick()
 
 
-    console.log('3. Get Volume of Each Chunk')
+    console.log('2. Get Volume of Each Chunk')
     let volumeList = []
     let soundFileList = fs.readdirSync('workspace/sounds')
     let pb3 = makeProgressBar(soundFileList.length)
@@ -106,13 +99,14 @@ async function start() {
     plot.addRoundedSounded(soundedList.map(data => data?1:0))
     worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
 
+    plot.setOptimizeFunction(getOptimizeFunction(round_method))
     //plot.addOptionString(`chunk_size: ${chunk_size}`)
     //plot.addOptionString(`sounded_speed: ${sounded_speed}`)
     //plot.addOptionString(`silent_speed: ${silent_speed}`)
     plot.addOptionString(`standard_db: ${standard_db}`)
     //plot.addOptionString(`volume_round_range: ${volume_round_range}`)
     //plot.addOptionString(`sounded_round_range: ${sounded_round_range}`)
-    plot.addOptionString(`round_method: ${round_method}`)
+    //plot.addOptionString(`round_method: ${round_method}`)
     plot.show()
 
 
@@ -138,17 +132,17 @@ async function start() {
     editWorkList.shift()
 
 
-    console.log('4. Set Keyframe')
-    let pb4 = makeProgressBar(2)
-    pb4.tick()
-    await ffmpeg(['-i', 'workspace/1_input.mp4',
+    console.log('3. Reformat Video (mp4, keyframe)')
+    let pb1 = makeProgressBar(2)
+    pb1.tick()
+    await ffmpeg(['-i', input,
         '-x264opts', 'keyint=1',
-        '-y', 'workspace/2_keyframed.mp4'
+        '-preset', 'ultrafast',
+        '-y', 'workspace/input.mp4'
     ])
-    pb4.tick()
+    pb1.tick()
 
-
-    console.log('5. Split and Speeding Videos')
+    console.log('4. Split and Speeding Videos')
     let pb5 = makeProgressBar(editWorkList.length)
     for (i in editWorkList) {
         let editWork = editWorkList[i]
@@ -158,7 +152,7 @@ async function start() {
         if (soundSpeed != Infinity)
             await ffmpeg([
                 '-ss', `${editWork.start}`,
-                '-i', 'workspace/2_keyframed.mp4',
+                '-i', 'workspace/input.mp4',
                 '-t', `${t}`,
                 '-filter_complex', `[0:v]setpts=${videoSpeed}*PTS[v];[0:a]atempo=${soundSpeed}[a]`,
                 '-map', '[v]',
@@ -169,7 +163,7 @@ async function start() {
     }
 
 
-    console.log('6. Merge All Part to One Video')
+    console.log('5. Merge All Part to One Video')
     let pb7 = makeProgressBar(2)
     pb7.tick()
     let videoFileList = fs.readdirSync('workspace/videos')
@@ -181,7 +175,7 @@ async function start() {
     await ffmpeg(['-f', 'concat',
         '-i', 'workspace/videos/list.txt',
         '-c', 'copy',
-        '-y', `workspace/3_result.mp4`
+        '-y', `workspace/result.mp4`
     ])
     pb7.tick()
 
@@ -239,7 +233,7 @@ function meanVolume(path) {
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length
 
 function makeProgressBar(length) {
-    const progressBar = new ProgressBar(`[:bar] :percent :current/:total :elapseds`, {
+    const progressBar = new ProgressBar(`[:bar] :percent :current/:total :elapseds :etas`, {
         complete: '=',
         incomplete: ' ',
         width: 20,
@@ -276,20 +270,24 @@ function roundList(input, size) {
     return output
 }
 
-function optimizeValue(value, weight) {
+function getOptimizeFunction(method){
     let ret
-    switch (round_method) {
+    switch (method) {
         case 1:
-            ret = value * optimizeFunction1(weight)
+            ret = optimizeFunction1
             break;
         case 2:
-            ret = value * optimizeFunction2(weight)
+            ret = optimizeFunction2
             break;
         default:
-            ret = value * optimizeFunction0(weight)
+            ret = optimizeFunction0
             break;
     }
     return ret
+}
+
+function optimizeValue(value, weight) {
+    return value * getOptimizeFunction(round_method)(weight)
 }
 
 function optimizeFunction0(x){
