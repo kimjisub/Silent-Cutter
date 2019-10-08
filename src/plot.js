@@ -14,7 +14,8 @@ let soundedRoundMethod = () => 1
 
 module.exports.show = () => {
 	plot.stack(
-		[{
+		[
+			{
 				type: 'bar',
 				mode: 'lines',
 				name: 'Sounded',
@@ -104,94 +105,94 @@ module.exports.show = () => {
 			}
 		})
 
-{
-	const scale = 100
-	let xList = []
-	let yList = []
-	for(let i=-scale;i<=scale;i++){
-		let x = i / scale
-		let y = volumeRoundMethod(x)
-		xList.push(x)
-		yList.push(y)
-	}
-	
-	plot.stack(
-		[{
-			type: 'scatter',
-			mode: 'lines',
-			x: xList,
-			y: yList,
-			xaxis: 'x',
-			yaxis: 'y',
-			width: 1
-		}], {
-			autosize: false,
-			width: 500,
-			height: 500,
-			title: {
-				text: 'Volume Round Method'
-			},
-			xaxis: {
-				side: 'bottom',
-				range:[-1,1],
-				title: {
-					text: 'Relate'
-				}
-			},
-			yaxis: {
-				side: 'left',
-				range: [-1, 1],
-				title: {
-					text: 'Weight'
-				}
-			},
-		})
-}
+	{
+		const scale = 100
+		let xList = []
+		let yList = []
+		for (let i = -scale; i <= scale; i++) {
+			let x = i / scale
+			let y = volumeRoundMethod(x)
+			xList.push(x)
+			yList.push(y)
+		}
 
-{
-	const scale = 100
-	let xList = []
-	let yList = []
-	for(let i=-scale;i<=scale;i++){
-		let x = i / scale
-		let y = soundedRoundMethod(x)
-		xList.push(x)
-		yList.push(y)
+		plot.stack(
+			[{
+				type: 'scatter',
+				mode: 'lines',
+				x: xList,
+				y: yList,
+				xaxis: 'x',
+				yaxis: 'y',
+				width: 1
+			}], {
+				autosize: false,
+				width: 500,
+				height: 500,
+				title: {
+					text: 'Volume Round Method'
+				},
+				xaxis: {
+					side: 'bottom',
+					range: [-1, 1],
+					title: {
+						text: 'Relate'
+					}
+				},
+				yaxis: {
+					side: 'left',
+					range: [-1, 1],
+					title: {
+						text: 'Weight'
+					}
+				},
+			})
 	}
-	
-	plot.stack(
-		[{
-			type: 'scatter',
-			mode: 'lines',
-			x: xList,
-			y: yList,
-			xaxis: 'x',
-			yaxis: 'y',
-			width: 1
-		}], {
-			autosize: false,
-			width: 500,
-			height: 500,
-			title: {
-				text: 'Sounded Round Method'
-			},
-			xaxis: {
-				side: 'bottom',
-				range:[-1,1],
+
+	{
+		const scale = 100
+		let xList = []
+		let yList = []
+		for (let i = -scale; i <= scale; i++) {
+			let x = i / scale
+			let y = soundedRoundMethod(x)
+			xList.push(x)
+			yList.push(y)
+		}
+
+		plot.stack(
+			[{
+				type: 'scatter',
+				mode: 'lines',
+				x: xList,
+				y: yList,
+				xaxis: 'x',
+				yaxis: 'y',
+				width: 1
+			}], {
+				autosize: false,
+				width: 500,
+				height: 500,
 				title: {
-					text: 'Relate'
-				}
-			},
-			yaxis: {
-				side: 'left',
-				range: [-1, 1],
-				title: {
-					text: 'Weight'
-				}
-			},
-		})
-}
-	
+					text: 'Sounded Round Method'
+				},
+				xaxis: {
+					side: 'bottom',
+					range: [-1, 1],
+					title: {
+						text: 'Relate'
+					}
+				},
+				yaxis: {
+					side: 'left',
+					range: [-1, 1],
+					title: {
+						text: 'Weight'
+					}
+				},
+			})
+	}
+
 	plot.plot()
 }
 

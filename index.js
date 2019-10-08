@@ -4,10 +4,12 @@ const ProgressBar = require('progress')
 const Excel = require('exceljs')
 const plot = require('./src/plot')
 const cache = require('./src/cache')
+const optimize = require('./src/optmize')
 const md5File = require('md5-file')
 const {
 	spawn
 } = require('child_process')
+
 
 try{
 	fs.removeSync('workspace')
@@ -83,7 +85,7 @@ async function start() {
 	standard_db = standard_db || avg
 	plot.setStandardDb(standard_db)
 
-	volumeList = roundList(volumeList, volume_round_range, getOptFunc(volume_round_method))
+	volumeList = optimize.roundList(volumeList, volume_round_range, optimize.getOptFunc(volume_round_method))
 	plot.addRoundedVolume(volumeList)
 	worksheet.getColumn(2).values = ['Rounded Volume'].concat(volumeList)
 
@@ -94,7 +96,7 @@ async function start() {
 	plot.addSounded(soundedList.map(data => data ? 1 : 0))
 	worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
 
-	soundedList = roundList(soundedList, sounded_round_range, getOptFunc(sounded_round_method))
+	soundedList = optimize.roundList(soundedList, sounded_round_range, optimize.getOptFunc(sounded_round_method))
 	plot.addRoundingSounded(soundedList)
 	worksheet.getColumn(4).values = ['Rounding Sounded'].concat(soundedList)
 
@@ -102,8 +104,8 @@ async function start() {
 	plot.addRoundedSounded(soundedList.map(data => data ? 1 : 0))
 	worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
 
-	plot.setVolumeRoundMethod(getOptFunc(volume_round_method))
-	plot.setSoundedRoundMethod(getOptFunc(sounded_round_method))
+	plot.setVolumeRoundMethod(optimize.getOptFunc(volume_round_method))
+	plot.setSoundedRoundMethod(optimize.getOptFunc(sounded_round_method))
 	//plot.addOptionString(`chunk_size: ${chunk_size}`)
 	//plot.addOptionString(`sounded_speed: ${sounded_speed}`)
 	//plot.addOptionString(`silent_speed: ${silent_speed}`)
@@ -245,77 +247,4 @@ function makeProgressBar(length) {
 	})
 	progressBar.tick(0)
 	return progressBar
-}
-
-function getOptFunc(methodIndex) {
-	let ret
-	switch (methodIndex) {
-		case 1:
-			ret = optimizeFunction1
-			break
-		case 2:
-			ret = optimizeFunction2
-			break
-		case 3:
-			ret = optimizeFunction3
-			break
-		default:
-			ret = optimizeFunction0
-			break
-	}
-	return ret
-}
-
-function roundList(input, size, method) {
-	let output = []
-	for (let i = 0; i < input.length; i++) {
-		let start = Math.max(i - size, 0)
-		let end = Math.min(i + size, input.length - 1)
-		let length = end - start + 1
-
-		let maxTotal = 0
-		for (let j = start; j <= end; j++) {
-			let weight = (j - i) / size || 0
-			maxTotal += optimizeValue(1, weight, method)
-		}
-		let maxAvg = maxTotal / length
-
-		let total = 0
-		for (let j = start; j <= end; j++) {
-			let weight = (j - i) / size || 0
-			total += optimizeValue(input[j], weight, method)
-		}
-		let avg = total / length * (1 / maxAvg)
-
-		output[i] = avg
-	}
-	return output
-}
-
-function optimizeValue(value, weight, method) {
-	return value * method(weight)
-}
-
-function optimizeFunction0(x) {
-	return 1
-}
-
-function optimizeFunction1(x) {
-	return (1 - Math.pow(x, 2))
-}
-
-function optimizeFunction2(x) {
-	if (x < 0)
-		return Math.sqrt(1 - Math.pow(x, 2))
-	else
-		return (x + 1) * Math.pow((x - 1), 6)
-}
-
-function optimizeFunction3(x) {
-	if (x < 0)
-		return Math.sqrt(1 - Math.pow(x, 2)) * (1 / 3 * x + 1)
-	else if (x<0.9)
-		return (x + 1) * Math.pow((x - 1), 4)
-	else
-		return 3
 }
