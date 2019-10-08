@@ -2,8 +2,8 @@ const fs = require('fs-extra')
 const sf = require('sf')
 const ProgressBar = require('progress')
 const Excel = require('exceljs')
-const plot = require('./plot')
-const cache = require('./cache')
+const plot = require('./src/plot')
+const cache = require('./src/cache')
 const md5File = require('md5-file')
 const {
 	spawn
