@@ -2,6 +2,9 @@ const fs = require('fs-extra')
 const sf = require('sf')
 const ProgressBar = require('progress')
 const Excel = require('exceljs')
+const plot = require('./plot')
+const cache = require('./cache')
+const md5File = require('md5-file')
 const {
     spawn
 } = require('child_process')
@@ -11,12 +14,13 @@ fs.ensureDirSync('workspace')
 fs.ensureDirSync('workspace/sounds')
 fs.ensureDirSync('workspace/videos')
 
-const chunk_size = 0.03333333
+const chunk_size = 0.03333333 // if null sec of 1 frame
 const sounded_speed = 1
-const silent_speed = Infinity
+const silent_speed = Infinity // if Infinity, skip
 const standard_db = -60 // if null, set to avg
 const round_1 = 2
 const round_2 = 0
+const debug = true
 
 start()
 
@@ -34,7 +38,8 @@ async function start() {
     }
 
     console.log('1. Convert video to mp4')
-    let pb1 = makeProgressBar(1)
+    let pb1 = makeProgressBar(2)
+    pb1.tick()
     await ffmpeg(['-i', 'input.mov',
         '-y', 'workspace/1_input.mp4'
     ])
@@ -42,7 +47,8 @@ async function start() {
 
 
     console.log('2. Extract Sound by Chunk')
-    let pb2 = makeProgressBar(1)
+    let pb2 = makeProgressBar(2)
+    pb2.tick()
     await ffmpeg(['-i', 'workspace/1_input.mp4',
         '-ab', '160k',
         '-ac', '2',
@@ -62,31 +68,40 @@ async function start() {
     let soundFileList = fs.readdirSync('workspace/sounds')
     let pb3 = makeProgressBar(soundFileList.length)
     for (i in soundFileList) {
-        let file = soundFileList[i]
-        volumeList[i] = await meanVolume('workspace/sounds/' + file)
+        const file = soundFileList[i]
+        const path = 'workspace/sounds/' + file
+        const hash = md5File.sync(path)
+        
+        volumeList[i] = await cache.getOrSet(hash, async () => {
+            return await meanVolume(path)
+        })
+
         pb3.tick()
     }
+    plot.addVolume(volumeList)
     worksheet.getColumn(1).values = ['Volume'].concat(volumeList)
 
 
     let avg = average(volumeList)
+    
 
     volumeList = roundList(volumeList, round_1)
-
+    plot.addRoundedVolume(volumeList)
     worksheet.getColumn(2).values = ['Rounded Volume'].concat(volumeList)
 
     let soundedList = []
     for (i in volumeList)
         soundedList[i] = volumeList[i] > (standard_db || avg)
-
-
+    plot.addSounded(soundedList)
     worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
 
     soundedList = roundList(soundedList, round_2)
+    plot.addRoundingSounded(soundedList)
     worksheet.getColumn(4).values = ['Rounding Sounded'].concat(soundedList)
 
     soundedList = soundedList.map(data => data > 0.5)
-
+    plot.addRoundedSounded(soundedList)
+    plot.show()
     worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
 
 
@@ -112,11 +127,10 @@ async function start() {
     }
     editWorkList.shift()
 
-    console.log(editWorkList)
-
 
     console.log('4. Set Keyframe')
-    let pb4 = makeProgressBar(1)
+    let pb4 = makeProgressBar(2)
+    pb4.tick()
     await ffmpeg(['-i', 'workspace/1_input.mp4',
         '-x264opts', 'keyint=1',
         '-y', 'workspace/2_keyframed.mp4'
@@ -146,7 +160,8 @@ async function start() {
 
 
     console.log('6. Merge All Part to One Video')
-    let pb7 = makeProgressBar(1)
+    let pb7 = makeProgressBar(2)
+    pb7.tick()
     let videoFileList = fs.readdirSync('workspace/videos')
     let videoList = videoFileList.map((data) => {
         return `file ${data}`
