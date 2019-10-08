@@ -65,7 +65,7 @@ module.exports.show = () => {
 			{
 				type: 'scatter',
 				mode: 'lines',
-				name: 'Standard db',
+				name: 'Standard dB',
 				x: [0, sounded.length],
 				y: [standardDb, standardDb],
 				xaxis: 'x',
