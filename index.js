@@ -17,15 +17,15 @@ fs.ensureDirSync('workspace/videos')
 const chunk_size = 0.03333333 // if null sec of 1 frame
 const sounded_speed = 1
 const silent_speed = Infinity // if Infinity, skip
-const standard_db = -40 // if null, set to avg
-const round_1 = 2
-const round_2 = 0
+let standard_db = -47 // if null, set to avg
+const volume_round_range = 10
+const sounded_round_range = 4
+const round_method = 2
 const debug = true
 
 start()
 
 async function start() {
-
     const workbook = new Excel.Workbook()
     const worksheet = workbook.addWorksheet('log')
 
@@ -84,27 +84,36 @@ async function start() {
 
 
     let avg = average(volumeList)
-    
+    standard_db = standard_db || avg
+    plot.setStandardDb(standard_db)
 
-    volumeList = roundList(volumeList, round_1)
+    volumeList = roundList(volumeList, volume_round_range)
     plot.addRoundedVolume(volumeList)
     worksheet.getColumn(2).values = ['Rounded Volume'].concat(volumeList)
 
+    
     let soundedList = []
     for (i in volumeList)
-        soundedList[i] = volumeList[i] > (standard_db || avg)
+        soundedList[i] = volumeList[i] > (standard_db)
     plot.addSounded(soundedList.map(data => data?1:0))
     worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
 
-    soundedList = roundList(soundedList, round_2)
+    soundedList = roundList(soundedList, sounded_round_range)
     plot.addRoundingSounded(soundedList)
     worksheet.getColumn(4).values = ['Rounding Sounded'].concat(soundedList)
 
     soundedList = soundedList.map(data => data > 0.5)
     plot.addRoundedSounded(soundedList.map(data => data?1:0))
-    plot.show()
     worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
 
+    //plot.addOptionString(`chunk_size: ${chunk_size}`)
+    //plot.addOptionString(`sounded_speed: ${sounded_speed}`)
+    //plot.addOptionString(`silent_speed: ${silent_speed}`)
+    plot.addOptionString(`standard_db: ${standard_db}`)
+    //plot.addOptionString(`volume_round_range: ${volume_round_range}`)
+    //plot.addOptionString(`sounded_round_range: ${sounded_round_range}`)
+    plot.addOptionString(`round_method: ${round_method}`)
+    plot.show()
 
 
     let editWorkList = []
@@ -251,14 +260,14 @@ function roundList(input, size) {
         let maxTotal = 0
         for (let j = start; j <= end; j++) {
             let weight = (j - i) / size || 0
-            maxTotal += weightValue(1, weight)
+            maxTotal += optimizeValue(1, weight)
         }
         let maxAvg = maxTotal / length
 
         let total = 0
         for (let j = start; j <= end; j++) {
             let weight = (j - i) / size || 0
-            total += weightValue(input[j], weight)
+            total += optimizeValue(input[j], weight)
         }
         let avg = total / length * (1 / maxAvg)
 
@@ -267,6 +276,33 @@ function roundList(input, size) {
     return output
 }
 
-function weightValue(value, weight) {
-    return value * (1 - Math.pow(weight, 2))
+function optimizeValue(value, weight) {
+    let ret
+    switch (round_method) {
+        case 1:
+            ret = value * optimizeFunction1(weight)
+            break;
+        case 2:
+            ret = value * optimizeFunction2(weight)
+            break;
+        default:
+            ret = value * optimizeFunction0(weight)
+            break;
+    }
+    return ret
+}
+
+function optimizeFunction0(x){
+    return 1
+}
+
+function optimizeFunction1(x) {
+   return (1 - Math.pow(x, 2))
+}
+
+function optimizeFunction2(x) {
+	if (x < 0)
+		return Math.sqrt(1 - Math.pow(x, 2))
+	else
+		return (x + 1) * Math.pow((x - 1), 6)
 }

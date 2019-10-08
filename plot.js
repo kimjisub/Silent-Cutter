@@ -5,6 +5,8 @@ let roundedVolume = []
 let sounded = []
 let roundingSounded = []
 let roundedSounded = []
+let standardDb = 0
+let optionString = 'Report<br>'
 
 const plotData = [{
 		type: 'bar',
@@ -54,8 +56,20 @@ const plotData = [{
 		xaxis: 'x',
 		yaxis: 'y3'
 	},
+	{
+		type: 'scatter',
+		mode: 'lines',
+		name: 'Standard db',
+		x: [0,1000],
+		y: [-50, -50],
+		xaxis: 'x',
+		yaxis: 'y3'
+	},
 ]
 const plotLayout = {
+	title:{
+		text: 'Report<br>'
+	},
 	xaxis: {
 		side: 'bottom',
 		//range:[0,1],
@@ -67,60 +81,64 @@ const plotLayout = {
 		side: 'right',
 		range: [0, 1],
 		title: {
-			text: 'asdf'
+			text: 'Sounded'
 		}
 	},
 	yaxis2: {
 		side: 'right',
 		overlaying: 'y',
 		range: [0, 1],
-		title: {
-			text: 'asdf'
-		}
 	},
 	yaxis3: {
 		side: 'left',
 		overlaying: 'y',
 		//range:[0,1],
 		title: {
-			text: 'asdf'
+			text: 'Volume (dB)'
 		}
 	}
 }
 
 function insertData() {
 	plotData[0].y = sounded
-	plotData[1].y = roundingSounded
-	plotData[2].y = roundedSounded
+	plotData[1].y = roundedSounded
+	plotData[2].y = roundingSounded
 	plotData[3].y = volume
 	plotData[4].y = roundedVolume
+	plotData[5].x = [0, sounded.length]
+	plotData[5].y = [standardDb, standardDb]
+	plotLayout.title.text = optionString
 }
 
 module.exports.show = () => {
+	insertData()
 	plot.plot(plotData, plotLayout)
 }
 
 module.exports.addVolume = (data) => {
 	volume = data
-	insertData()
 }
 
 module.exports.addRoundedVolume = (data) => {
 	roundedVolume = data
-	insertData()
 }
 
 module.exports.addSounded = (data) => {
 	sounded = data
-	insertData()
 }
 
 module.exports.addRoundingSounded = (data) => {
 	roundingSounded = data
-	insertData()
 }
 
 module.exports.addRoundedSounded = (data) => {
 	roundedSounded = data
-	insertData()
+}
+
+module.exports.setStandardDb = (data) => {
+	standardDb = data
+}
+
+module.exports.addOptionString = (data) => {
+	optionString += `<sup>${data}</sup><br>`
 }
