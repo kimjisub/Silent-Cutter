@@ -9,16 +9,14 @@ Edit Video Automatically by Sound
 
 ## How's it work?
 
-### 1. Convert video to mp4
+### 1. Extract Sound by Chunk
 
-### 2. Extract Sound by Chunk
+### 2. Get Volume of Each Chunk
 
-### 3. Get Volume of Each Chunk
+### 3. Reformat Video (mp4, keyframe)
 
-### 4. Set Keyframe
+### 4. Split and Speeding Videos
 
-### 5. Split and Speeding Videos
-
-### 6. Merge All Part to One Video
+### 5. Merge All Part to One Video
 
 ## Parameter
