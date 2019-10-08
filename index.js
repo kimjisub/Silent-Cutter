@@ -64,7 +64,7 @@ async function start() {
 	let volumeList = []
 	let soundFileList = fs.readdirSync('workspace/sounds')
 	let pb3 = makeProgressBar(soundFileList.length)
-	for (i in soundFileList) {
+	for (let i in soundFileList) {
 		const file = soundFileList[i]
 		const path = 'workspace/sounds/' + file
 		const hash = md5File.sync(path)
@@ -89,7 +89,7 @@ async function start() {
 
 
 	let soundedList = []
-	for (i in volumeList)
+	for (let i in volumeList)
 		soundedList[i] = volumeList[i] > (standard_db)
 	plot.addSounded(soundedList.map(data => data ? 1 : 0))
 	worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
@@ -120,7 +120,7 @@ async function start() {
 	//{start: 0, end: 1.4, sounded: true}
 	let prevSounded = !soundedList[0]
 	let prevSec = 0
-	for (i in soundedList) {
+	for (let i in soundedList) {
 		let sounded = soundedList[i]
 		let sec = i * chunk_size
 
@@ -150,7 +150,7 @@ async function start() {
 
 	console.log('4. Split and Speeding Videos')
 	let pb5 = makeProgressBar(editWorkList.length)
-	for (i in editWorkList) {
+	for (let i in editWorkList) {
 		let editWork = editWorkList[i]
 		let soundSpeed = editWork.sounded ? sounded_speed : silent_speed
 		let videoSpeed = 1 / soundSpeed
@@ -181,7 +181,7 @@ async function start() {
 	await ffmpeg(['-f', 'concat',
 		'-i', 'workspace/videos/list.txt',
 		'-c', 'copy',
-		'-y', `workspace/result.mp4`
+		'-y', 'workspace/result.mp4'
 	])
 	pb7.tick()
 }
@@ -189,18 +189,18 @@ async function start() {
 function ffmpeg(params) {
 	//console.log('\nffmpeg '+ params.join(' '))
 	return new Promise((resolve, reject) => {
-		const process = spawn('ffmpeg', params);
+		const process = spawn('ffmpeg', params)
 		let log = ''
 
 		process.stdout.on('data', (data) => {
 			//console.log(`stdout: ${data}`);
 			log += `${data}\n`
-		});
+		})
 
 		process.stderr.on('data', (data) => {
 			//console.error(`stderr: ${data}`);
 			log += `${data}\n`
-		});
+		})
 
 		process.on('close', (code) => {
 			//console.log(`child process exited with code ${code}`);
@@ -208,7 +208,7 @@ function ffmpeg(params) {
 				resolve(log)
 			else
 				reject(log)
-		});
+		})
 	})
 }
 
@@ -220,7 +220,7 @@ function meanVolume(path) {
 			'-af', 'volumedetect',
 			'-f', 'null', '/dev/null'
 		]).then(data => {
-			let meanVolumeLog = data.match(/mean_volume:\s[-\d.\sdB]*/g);
+			let meanVolumeLog = data.match(/mean_volume:\s[-\d.\sdB]*/g)
 
 			if (meanVolumeLog) {
 				let meanVolumeString = meanVolumeLog[0].match(/[-\d.]{1,}/g)
@@ -237,7 +237,7 @@ function meanVolume(path) {
 const average = arr => arr.reduce((p, c) => p + c, 0) / arr.length
 
 function makeProgressBar(length) {
-	const progressBar = new ProgressBar(`[:bar] :percent :current/:total :elapseds :etas`, {
+	const progressBar = new ProgressBar('[:bar] :percent :current/:total :elapseds :etas', {
 		complete: '=',
 		incomplete: ' ',
 		width: 40,
@@ -252,16 +252,16 @@ function getOptFunc(methodIndex) {
 	switch (methodIndex) {
 		case 1:
 			ret = optimizeFunction1
-			break;
+			break
 		case 2:
 			ret = optimizeFunction2
-			break;
+			break
 		case 3:
 			ret = optimizeFunction3
-			break;
+			break
 		default:
 			ret = optimizeFunction0
-			break;
+			break
 	}
 	return ret
 }
