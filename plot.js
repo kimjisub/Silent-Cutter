@@ -8,111 +8,145 @@ let roundedSounded = []
 let standardDb = 0
 let optionString = 'Report<br>'
 
-const plotData = [{
-		type: 'bar',
-		mode: 'lines',
-		name: 'Sounded',
-		y: [0, 1, 1, 0, 0, 1],
-		xaxis: 'x',
-		yaxis: 'y1',
-		width: 1,
-		marker: {
-			color: '#EF285Eaa'
-		}
-	},
-	{
-		type: 'bar',
-		mode: 'lines',
-		name: 'Rounded Sounded',
-		y: [0, 1, 1, 0, 0, 1],
-		xaxis: 'x',
-		yaxis: 'y2',
-		width: 1,
-		marker: {
-			color: '#F09D25aa'
-		}
-	},
-	{
-		type: 'scatter',
-		mode: 'lines',
-		name: 'Rounding Sounded',
-		y: [0, 1, 1, 0, 0, 1],
-		xaxis: 'x',
-		yaxis: 'y2'
-	},
-	{
-		type: 'scatter',
-		mode: 'lines',
-		name: 'Volume',
-		y: [-35, -57, -47, -56, -44, -54],
-		xaxis: 'x',
-		yaxis: 'y3'
-	},
-	{
-		type: 'scatter',
-		mode: 'lines',
-		name: 'Rounded Volume',
-		y: [-35, -57, -47, -56, -44, -54],
-		xaxis: 'x',
-		yaxis: 'y3'
-	},
-	{
-		type: 'scatter',
-		mode: 'lines',
-		name: 'Standard db',
-		x: [0,1000],
-		y: [-50, -50],
-		xaxis: 'x',
-		yaxis: 'y3'
-	},
-]
-const plotLayout = {
-	title:{
-		text: 'Report<br>'
-	},
-	xaxis: {
-		side: 'bottom',
-		//range:[0,1],
-		title: {
-			text: 'Time'
-		}
-	},
-	yaxis1: {
-		side: 'right',
-		range: [0, 1],
-		title: {
-			text: 'Sounded'
-		}
-	},
-	yaxis2: {
-		side: 'right',
-		overlaying: 'y',
-		range: [0, 1],
-	},
-	yaxis3: {
-		side: 'left',
-		overlaying: 'y',
-		//range:[0,1],
-		title: {
-			text: 'Volume (dB)'
-		}
-	}
-}
+let optimizeFunction = () => 1
 
-function insertData() {
-	plotData[0].y = sounded
-	plotData[1].y = roundedSounded
-	plotData[2].y = roundingSounded
-	plotData[3].y = volume
-	plotData[4].y = roundedVolume
-	plotData[5].x = [0, sounded.length]
-	plotData[5].y = [standardDb, standardDb]
-	plotLayout.title.text = optionString
-}
 
 module.exports.show = () => {
-	insertData()
-	plot.plot(plotData, plotLayout)
+	plot.stack(
+		[{
+				type: 'bar',
+				mode: 'lines',
+				name: 'Sounded',
+				y: sounded,
+				xaxis: 'x',
+				yaxis: 'y1',
+				width: 1,
+				marker: {
+					color: '#EF285Eaa'
+				}
+			},
+			{
+				type: 'bar',
+				mode: 'lines',
+				name: 'Rounded Sounded',
+				y: roundedSounded,
+				xaxis: 'x',
+				yaxis: 'y2',
+				width: 1,
+				marker: {
+					color: '#F09D25aa'
+				}
+			},
+			{
+				type: 'scatter',
+				mode: 'lines',
+				name: 'Rounding Sounded',
+				y: roundingSounded,
+				xaxis: 'x',
+				yaxis: 'y2'
+			},
+			{
+				type: 'scatter',
+				mode: 'lines',
+				name: 'Volume',
+				y: volume,
+				xaxis: 'x',
+				yaxis: 'y3'
+			},
+			{
+				type: 'scatter',
+				mode: 'lines',
+				name: 'Rounded Volume',
+				y: roundedVolume,
+				xaxis: 'x',
+				yaxis: 'y3'
+			},
+			{
+				type: 'scatter',
+				mode: 'lines',
+				name: 'Standard db',
+				x: [0, sounded.length],
+				y: [standardDb, standardDb],
+				xaxis: 'x',
+				yaxis: 'y3'
+			},
+		], {
+			title: {
+				text: optionString
+			},
+			xaxis: {
+				side: 'bottom',
+				//range:[0,1],
+				title: {
+					text: 'Time'
+				}
+			},
+			yaxis1: {
+				side: 'right',
+				range: [0, 1],
+				title: {
+					text: 'Sounded'
+				}
+			},
+			yaxis2: {
+				side: 'right',
+				overlaying: 'y',
+				range: [0, 1],
+			},
+			yaxis3: {
+				side: 'left',
+				overlaying: 'y',
+				//range:[0,1],
+				title: {
+					text: 'Volume (dB)'
+				}
+			}
+		})
+
+
+	const scale = 100
+	let xList = []
+	let yList = []
+	for(let i=-scale;i<=scale;i++){
+		let x = i / scale
+		let y = optimizeFunction(x)
+		xList.push(x)
+		yList.push(y)
+	}
+	
+	plot.stack(
+		[{
+			type: 'scatter',
+			mode: 'lines',
+			name: 'Optimize Function',
+			x: xList,
+			y: yList,
+			xaxis: 'x',
+			yaxis: 'y',
+			width: 1
+		}], {
+			autosize: false,
+			width: 500,
+			height: 500,
+			title: {
+				text: 'Optimize Function'
+			},
+			xaxis: {
+				side: 'bottom',
+				range:[-1,1],
+				title: {
+					text: 'Relate'
+				}
+			},
+			yaxis: {
+				side: 'left',
+				range: [-1, 1],
+				title: {
+					text: 'Weight'
+				}
+			},
+		})
+	plot.plot()
 }
 
 module.exports.addVolume = (data) => {
@@ -141,4 +175,8 @@ module.exports.setStandardDb = (data) => {
 
 module.exports.addOptionString = (data) => {
 	optionString += `<sup>${data}</sup><br>`
+}
+
+module.exports.setOptimizeFunction = (func) => {
+	optimizeFunction = func
 }
