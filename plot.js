@@ -8,7 +8,8 @@ let roundedSounded = []
 let standardDb = 0
 let optionString = 'Report<br>'
 
-let optimizeFunction = () => 1
+let volumeRoundMethod = () => 1
+let soundedRoundMethod = () => 1
 
 
 module.exports.show = () => {
@@ -103,13 +104,13 @@ module.exports.show = () => {
 			}
 		})
 
-
+{
 	const scale = 100
 	let xList = []
 	let yList = []
 	for(let i=-scale;i<=scale;i++){
 		let x = i / scale
-		let y = optimizeFunction(x)
+		let y = volumeRoundMethod(x)
 		xList.push(x)
 		yList.push(y)
 	}
@@ -118,7 +119,6 @@ module.exports.show = () => {
 		[{
 			type: 'scatter',
 			mode: 'lines',
-			name: 'Optimize Function',
 			x: xList,
 			y: yList,
 			xaxis: 'x',
@@ -129,7 +129,7 @@ module.exports.show = () => {
 			width: 500,
 			height: 500,
 			title: {
-				text: 'Optimize Function'
+				text: 'Volume Round Method'
 			},
 			xaxis: {
 				side: 'bottom',
@@ -146,6 +146,52 @@ module.exports.show = () => {
 				}
 			},
 		})
+}
+
+{
+	const scale = 100
+	let xList = []
+	let yList = []
+	for(let i=-scale;i<=scale;i++){
+		let x = i / scale
+		let y = soundedRoundMethod(x)
+		xList.push(x)
+		yList.push(y)
+	}
+	
+	plot.stack(
+		[{
+			type: 'scatter',
+			mode: 'lines',
+			x: xList,
+			y: yList,
+			xaxis: 'x',
+			yaxis: 'y',
+			width: 1
+		}], {
+			autosize: false,
+			width: 500,
+			height: 500,
+			title: {
+				text: 'Sounded Round Method'
+			},
+			xaxis: {
+				side: 'bottom',
+				range:[-1,1],
+				title: {
+					text: 'Relate'
+				}
+			},
+			yaxis: {
+				side: 'left',
+				range: [-1, 1],
+				title: {
+					text: 'Weight'
+				}
+			},
+		})
+}
+	
 	plot.plot()
 }
 
@@ -177,6 +223,10 @@ module.exports.addOptionString = (data) => {
 	optionString += `<sup>${data}</sup><br>`
 }
 
-module.exports.setOptimizeFunction = (func) => {
-	optimizeFunction = func
+module.exports.setVolumeRoundMethod = (func) => {
+	volumeRoundMethod = func
+}
+
+module.exports.setSoundedRoundMethod = (func) => {
+	soundedRoundMethod = func
 }
