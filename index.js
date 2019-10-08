@@ -41,6 +41,7 @@ async function start() {
     let pb1 = makeProgressBar(2)
     pb1.tick()
     await ffmpeg(['-i', 'input.mov',
+        '-preset', 'ultrafast',
         '-y', 'workspace/1_input.mp4'
     ])
     pb1.tick()
