@@ -17,7 +17,7 @@ fs.ensureDirSync('workspace/videos')
 const chunk_size = 0.03333333 // if null sec of 1 frame
 const sounded_speed = 1
 const silent_speed = Infinity // if Infinity, skip
-const standard_db = -60 // if null, set to avg
+const standard_db = -40 // if null, set to avg
 const round_1 = 2
 const round_2 = 0
 const debug = true
@@ -73,9 +73,9 @@ async function start() {
         const path = 'workspace/sounds/' + file
         const hash = md5File.sync(path)
         
-        volumeList[i] = await cache.getOrSet(hash, async () => {
+        volumeList[i] = Number(await cache.getOrSet(hash, async () => {
             return await meanVolume(path)
-        })
+        }))
 
         pb3.tick()
     }
@@ -93,7 +93,7 @@ async function start() {
     let soundedList = []
     for (i in volumeList)
         soundedList[i] = volumeList[i] > (standard_db || avg)
-    plot.addSounded(soundedList)
+    plot.addSounded(soundedList.map(data => data?1:0))
     worksheet.getColumn(3).values = ['Sounded'].concat(soundedList)
 
     soundedList = roundList(soundedList, round_2)
@@ -101,7 +101,7 @@ async function start() {
     worksheet.getColumn(4).values = ['Rounding Sounded'].concat(soundedList)
 
     soundedList = soundedList.map(data => data > 0.5)
-    plot.addRoundedSounded(soundedList)
+    plot.addRoundedSounded(soundedList.map(data => data?1:0))
     plot.show()
     worksheet.getColumn(5).values = ['Rounded Sounded'].concat(soundedList)
 
