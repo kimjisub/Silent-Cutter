@@ -19,7 +19,12 @@
   "dependencies": {
     "exceljs": "^3.0.0",
     "fs-extra": "^8.1.0",
+    "md5-file": "^4.0.0",
+    "nodemon": "^1.19.3",
+    "nodeplotlib": "^0.6.4",
     "progress": "^2.0.3",
-    "sf": "^0.2.0"
+    "sf": "^0.2.0",
+    "sql-template-strings": "^2.2.2",
+    "sqlite": "^3.0.3"
   }
 }
