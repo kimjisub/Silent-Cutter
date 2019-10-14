@@ -2,7 +2,7 @@ const ArgumentParser = require('argparse').ArgumentParser
 const parser = new ArgumentParser({
 	version: '0.0.1',
 	addHelp: true,
-	description: 'Cut Video by Silent'
+	description: 'Cut Video by Silence'
 })
 
 parser.addArgument(
