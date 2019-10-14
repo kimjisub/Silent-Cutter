@@ -2,7 +2,7 @@ ffmpeg -i first_1.mov first_2.mp4
 ffmpeg -i first_2.mp4 -g 1 first_3.mp4
 ffmpeg -i first_3.mp4 -ab 160k -ac 2 -ar 44100 -vn first_4.wav
 ffmpeg -i first_4.wav -f segment -segment_time 0.1 -c copy out%06d.wav
-ffmpeg -i out000000.wav -af volumedetect -f null /dev/null
+ffmpeg -i 000000.wav -af volumedetect -f null /dev/null
 
 
 ffmpeg -i first_2.mp4 -force_key_frames expr:gte(t,n_forced*GOP_LEN_IN_SECONDS)

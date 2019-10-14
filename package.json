@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/0226daniel/Silent-Cutter#readme",
   "dependencies": {
+    "argparse": "^1.0.10",
     "exceljs": "^3.0.0",
     "fs-extra": "^8.1.0",
     "md5-file": "^4.0.0",

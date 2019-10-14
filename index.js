@@ -6,9 +6,8 @@ const plot = require('./src/plot')
 const cache = require('./src/cache')
 const optimize = require('./src/optmize')
 const md5File = require('md5-file')
-const {
-	spawn
-} = require('child_process')
+const { spawn } = require('child_process')
+const args = require('./src/args')()
 
 
 try{
@@ -18,11 +17,11 @@ fs.ensureDirSync('workspace')
 fs.ensureDirSync('workspace/sounds')
 fs.ensureDirSync('workspace/videos')
 
-const input = 'jaewoo.mov'
+const input = 'luna_wonjun.mov'
 const chunk_size = 0.03333333 // if null sec of 1 frame
 const sounded_speed = 1 // if Infinity, skip
 const silent_speed = Infinity // if Infinity, skip
-let standard_db = -52 // if null, set to avg
+let standard_db = -48 // if null, set to avg
 const volume_round_range = 2
 const sounded_round_range = 10
 const volume_round_method = 3
