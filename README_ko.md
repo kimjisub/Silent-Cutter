@@ -1,3 +1,5 @@
+[English Document](/README.md)
+
 # Silent-Cutter
 
 소리의 크기를 이용하여 동영상을 편집합니다.
@@ -12,26 +14,6 @@
 ```
 node index -i input.mp4 -o output.mp4 -db "-50"
 ```
-
-## 작동 방식
-
-### 1. Extract Sound by Chunk
-영상으로부터 사운드 파일을 `CHUNK_SIZE` 간격으로 추출합니다. `workspace/sounds/` 에 저장됩니다.
-
-### 2. Get Volume of Each Chunk
-각 사운드 청크로부터 소리 볼륨을 가져옵니다. 이 작업은 캐싱이 되며, 같은 영상을 2번 이상 처리하게 되면 속도가 향상됩니다.
-
-### 3. Reformat Video (mp4, keyframe)
-비디오파일을 편집하기 위한 상태로 변경합니다. mp4포멧으로 키프레임 1로 변환합니다. `workspace/keyedited.mp4` 에 저장됩니다.
-
-### 4. Split and Speeding Videos
-영상을 기준에 맞게 자르고, 속도를 조정합니다. `workspace/videos/` 에 저장됩니다.
-
-### 5. Merge All Part to One Video
-잘려진 영상을 하나의 비디오로 병합합니다. `OUTPUT` 에 저장됩니다.
-
-## Parameter
-
 ```
 usage: index [-h] [-v] [-i PATH] [-o PATH] [-c CHUNK_SIZE] [-s SOUNDED_SPEED] [-ns SILENT_SPEED] [-db STANDARD_dB] [-vrr RANGE] [-srr RANGE] [-vrm METHOD] [-srm METHOD] [-d DEBUG]
 
@@ -52,3 +34,20 @@ Optional arguments:
   -srm METHOD       Set sounded round method. (Default: 1)
   -d DEBUG          Show Debug web page. (Default: true)
 ```
+
+## 작동 방식
+
+### 1. Extract Sound by Chunk
+영상으로부터 사운드 파일을 `CHUNK_SIZE` 간격으로 추출합니다. `workspace/sounds/` 에 저장됩니다.
+
+### 2. Get Volume of Each Chunk
+각 사운드 청크로부터 소리 볼륨을 가져옵니다. 이 작업은 캐싱이 되며, 같은 영상을 2번 이상 처리하게 되면 속도가 향상됩니다.
+
+### 3. Reformat Video (mp4, keyframe)
+비디오파일을 편집하기 위한 상태로 변경합니다. mp4포멧으로 키프레임 1로 변환합니다. `workspace/keyedited.mp4` 에 저장됩니다.
+
+### 4. Split and Speeding Videos
+영상을 기준에 맞게 자르고, 속도를 조정합니다. `workspace/videos/` 에 저장됩니다.
+
+### 5. Merge All Part to One Video
+잘려진 영상을 하나의 비디오로 병합합니다. `OUTPUT` 에 저장됩니다.
