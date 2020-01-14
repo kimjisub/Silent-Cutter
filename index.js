@@ -7,8 +7,21 @@ const cache = require('./src/cache')
 const optimize = require('./src/optmize')
 const md5File = require('md5-file')
 const { spawn } = require('child_process')
-const args = require('./src/args')()
 
+let {
+	input,
+	output,
+	chunk_size,
+	sounded_speed,
+	silent_speed,
+	standard_db,
+	volume_round_range,
+	volume_round_method,
+	sounded_round_range,
+	sounded_round_method,
+	debug
+} = args = require('./src/args')()
+console.log(args)
 
 try{
 	fs.removeSync('workspace')
@@ -16,17 +29,6 @@ try{
 fs.ensureDirSync('workspace')
 fs.ensureDirSync('workspace/sounds')
 fs.ensureDirSync('workspace/videos')
-
-const input = 'luna_wonjun.mov'
-const chunk_size = 0.03333333 // if null sec of 1 frame
-const sounded_speed = 1 // if Infinity, skip
-const silent_speed = Infinity // if Infinity, skip
-let standard_db = -48 // if null, set to avg
-const volume_round_range = 2
-const sounded_round_range = 10
-const volume_round_method = 3
-const sounded_round_method = 1
-const debug = true
 
 start()
 
@@ -113,7 +115,7 @@ async function start() {
 	//plot.addOptionString(`sounded_round_range: ${sounded_round_range}`)
 	//plot.addOptionString(`volume_round_method: ${volume_round_method}`)
 	//plot.addOptionString(`sounded_round_method: ${sounded_round_method}`)
-	plot.show()
+	if(debug) plot.show()
 	await workbook.xlsx.writeFile('workspace/report.xlsx')
 
 
@@ -145,7 +147,7 @@ async function start() {
 	await ffmpeg(['-i', input,
 		'-x264opts', 'keyint=1',
 		'-preset', 'ultrafast',
-		'-y', 'workspace/input.mp4'
+		'-y', 'workspace/keyedited.mp4'
 	])
 	pb1.tick()
 
@@ -159,7 +161,7 @@ async function start() {
 		if (soundSpeed != Infinity)
 			await ffmpeg([
 				'-ss', `${editWork.start}`,
-				'-i', 'workspace/input.mp4',
+				'-i', 'workspace/keyedited.mp4',
 				'-t', `${t}`,
 				'-filter_complex', `[0:v]setpts=${videoSpeed}*PTS[v];[0:a]atempo=${soundSpeed}[a]`,
 				'-map', '[v]',
@@ -174,15 +176,13 @@ async function start() {
 	let pb7 = makeProgressBar(2)
 	pb7.tick()
 	let videoFileList = fs.readdirSync('workspace/videos')
-	let videoList = videoFileList.map((data) => {
-		return `file ${data}`
-	})
+	let videoList = videoFileList.map((data) => `file ${data}`)
 	fs.writeFileSync('workspace/videos/list.txt', videoList.join('\n'))
 
 	await ffmpeg(['-f', 'concat',
 		'-i', 'workspace/videos/list.txt',
 		'-c', 'copy',
-		'-y', 'workspace/result.mp4'
+		'-y', output
 	])
 	pb7.tick()
 }

@@ -9,7 +9,7 @@ parser.addArgument(
 	['-i'], {
 		type: String,
 		dest: 'input',
-		metavar: 'PATH',
+		metavar: 'INPUT',
 		help: 'Input file. (Default: input.mp4)',
 		defaultValue: 'input.mp4'
 	}
@@ -19,7 +19,7 @@ parser.addArgument(
 	['-o'], {
 		type: String,
 		dest: 'output',
-		metavar: 'PATH',
+		metavar: 'OUTPUT',
 		help: 'Output file. (Default: output.mp4)',
 		defaultValue: 'output.mp4'
 	}
@@ -48,7 +48,7 @@ parser.addArgument(
 parser.addArgument(
 	['-ns'], {
 		type: Number,
-		dest: 'silent',
+		dest: 'silent_speed',
 		metavar: 'SILENT_SPEED',
 		help: 'Set silent part speed. (Default: Inf)',
 		defaultValue: Infinity
@@ -112,16 +112,9 @@ parser.addArgument(
 		type: Boolean,
 		dest: 'debug',
 		metavar: 'DEBUG',
-		help: 'Show Debug web page. (Default: false)',
-		defaultValue: false
+		help: 'Show Debug web page. (Default: true)',
+		defaultValue: true
 	}
 )
 
-module.exports = () => {
-
-	const args = parser.parseArgs()
-
-	console.log(args)
-
-	return parser.parseArgs()
-}
+module.exports = () => parser.parseArgs()
