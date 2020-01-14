@@ -4,7 +4,7 @@ Edit the video using sound volume.
 
 ## System Requirements
 
-[nodejs] (https://nodejs.org/), [FFmpeg] (https://www.ffmpeg.org/)
+[nodejs](https://nodejs.org/), [FFmpeg](https://www.ffmpeg.org/)
 
 If both programs are not installed, the operation of the program cannot be guaranteed.
 
